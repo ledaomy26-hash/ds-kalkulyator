@@ -38,6 +38,8 @@
       radial-gradient(800px 800px at 50% 120%, rgba(139,92,246,.08), transparent 60%),
       linear-gradient(180deg, var(--bg2), var(--bg));
     background-attachment: fixed; }
+  /* Полоса под строкой состояния телефона: без неё прокручиваемый текст просвечивает поверх часов (23.10.2026). */
+  body::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0); background: var(--bg); z-index: 6; }
   header { position: sticky; top: env(safe-area-inset-top, 0); background: rgba(8,9,14,.88); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); color: var(--ink); padding: 10px 16px; z-index: 5; }
   header .steps { font-size: 13px; color: var(--mute); letter-spacing: .04em; }
   header .bar { height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; margin-top: 7px; }
@@ -71,6 +73,10 @@
   button { font: inherit; font-weight: 600; border-radius: 12px; padding: 12px 18px; border: 1px solid transparent; background: linear-gradient(140deg, var(--acc), var(--acc-deep)); color:#fff; cursor:pointer; box-shadow: 0 10px 26px rgba(139,92,246,.32); }
   button:active { filter: brightness(1.12); }
   button.ghost { background: rgba(0,0,0,.3); border-color: var(--line); color: var(--ink); box-shadow: none; }
+  .okno-fon { position: fixed; inset: 0; background: rgba(0,0,0,.6); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 20; }
+  .okno { width: 100%; max-width: 420px; margin: 0; background: var(--card-solid); }
+  .okno p { margin: 4px 0 16px; font-size: 17px; }
+  .okno-knopki { display: flex; gap: 10px; justify-content: flex-end; }
   button.ghost:active { border-color: rgba(139,92,246,.5); background: rgba(139,92,246,.12); }
   button.small { padding: 7px 11px; font-size: 14px; }
   button.link { background:none; border:none; box-shadow:none; color: var(--acc2); padding: 0; text-decoration: underline; font-weight: 500; }
@@ -508,9 +514,10 @@ const M_stavki = (() => {
 // Оклады, надбавки и пенсионные константы. Все цифры — из СВОД ДОКУМЕНТОВ.md (сверено 29.09 и 02.10.2026).
 // Оклады — на 01.10.2025 (постановление 992 + индексации; приказ 727 прил. 3 + индексации; инструменты/oklady.py).
 
-const DATA_SPRAVOCHNIKA = '2026-10-02';
+const DATA_SPRAVOCHNIKA = '2026-10-23';
 const OKLADY_S = '2025-10-01';
-const INDEKSACIYA_PROEKT = { koef: 1.04, s: '2026-10-01', status: 'проект, не подписано (проверено 02.10.2026)' };
+// Проверено 23.10.2026: законопроект № 619-9 приостанавливает индексацию окладов (ч. 9 ст. 2 306-ФЗ) до 01.01.2027.
+const INDEKSACIYA_PROEKT = { tekst: 'В 2026 году оклады не индексируются: законопроект № 619-9 приостанавливает индексацию до 01.01.2027 (проверено 23.10.2026)' };
 
 const ZVANIYA = [
   { name: 'Рядовой, матрос', oklad: 7166, predel: 50 },
@@ -1684,14 +1691,14 @@ const PAGES = [
     root.append(h('div', { class: 'brand' }, h('img', { src: LOGO_DS, alt: 'DS' }), h('div', {}, h('div', { class: 'brand-name' }, 'DS Калькулятор'), h('div', { class: 'brand-sub' }, 'Выслуга · зарплата · пенсия военнослужащего'))));
     if (isIOS && !standalone && !native) root.append(h('div', { class: 'card hint' }, h('h3', {}, 'Установить на iPhone'), h('p', {}, 'Внизу Safari нажмите «Поделиться» (квадрат со стрелкой вверх), затем «На экран Домой» и «Добавить». Появится значок DS Калькулятор — приложение откроется на весь экран и будет работать без интернета.'), h('p', { class: 'mute' }, 'Открывайте ссылку именно в Safari: в других браузерах на iPhone этого пункта может не быть.')));
     root.append(h('div', { class: 'card' }, h('p', {}, 'Приложение считает по этапам вашей службы: выслугу календарную и льготную, когда наберётся 20 лет, зарплату по частям (до налога и на руки) и пенсию на сегодня с разбором каждой строки.'),
-      h('p', {}, h('b', {}, 'Ничего не отправляется с телефона.'), ' Нет регистрации. Приложение не спрашивает имя, часть, жетон. Все ответы хранятся только в памяти этого телефона (п. 1.1 ст. 7 закона 76-ФЗ запрещает передавать сведения о службе через интернет).'),
+      h('p', {}, h('b', {}, 'Ваши ответы не отправляются с телефона.'), ' Нет регистрации. Приложение не спрашивает имя, часть, жетон. Все ответы хранятся только в памяти этого телефона (п. 1.1 ст. 7 закона 76-ФЗ запрещает передавать сведения о службе через интернет).', window.Capacitor?.isNativePlatform?.() ? ' Рекламе Яндекса в приложении передаются только обезличенные сведения об устройстве — ваших ответов у неё нет.' : ''),
       h('p', {}, 'На каждом шаге — что это за цифра, в каком вашем документе она записана и по какому закону считается.'),
-      h('p', { class: 'mute' }, `Расчёт предварительный. Справочник от ${fmtD(DATA_SPRAVOCHNIKA)}, оклады с ${fmtD(OKLADY_S)}. Индексация с ${fmtD(INDEKSACIYA_PROEKT.s)} — ${INDEKSACIYA_PROEKT.status}.`)));
-    if (S.sostav) root.append(h('div', { class: 'card' }, h('p', {}, 'На телефоне есть прошлый расчёт.'), h('div', { class: 'row' }, h('button', { class: 'ghost', onclick: () => { go('D1'); } }, 'Открыть сводку'), h('button', { class: 'ghost', onclick: () => { if (confirmDel()) { S = defaults(); save(); render(); } } }, 'Начать заново'))));
+      h('p', { class: 'mute' }, `Расчёт предварительный. Справочник от ${fmtD(DATA_SPRAVOCHNIKA)}, оклады с ${fmtD(OKLADY_S)}. ${INDEKSACIYA_PROEKT.tekst}.`)));
+    if (S.sostav) root.append(h('div', { class: 'card' }, h('p', {}, 'На телефоне есть прошлый расчёт.'), h('div', { class: 'row' }, h('button', { class: 'ghost', onclick: () => { go('D1'); } }, 'Открыть сводку'), h('button', { class: 'ghost', onclick: () => confirmDel().then(ok => { if (ok) { S = defaults(); save(); render(); } }) }, 'Начать заново'))));
   } },
   { id: 'A2', blok: 'Начало', title: 'Кто вы', render(root) {
     root.append(hint('От ведомства, состава и пола зависит, что засчитывается в выслугу, какие страницы будут дальше и до какого возраста можно служить.', null, 'п. 2 постановления 941 (учёба — офицерам); ст. 49 закона 53-ФЗ (предельный возраст)'));
-    root.append(h('h2', {}, 'Ведомство'), radio('ved', [{ value: 'mo', label: 'Министерство обороны' }, { value: 'x', label: 'Росгвардия, МВД, ФСБ, ФСИН, МЧС', sub: 'в следующей версии: у них свой перечень местностей (приложение 2.1 к 941) и своя зарплата' }], S.vedomstvo, v => { if (v === 'mo') { S.vedomstvo = v; save(); } else alert('Пока только Минобороны. Другие ведомства — в следующей версии.'); render(); }));
+    root.append(h('h2', {}, 'Ведомство'), radio('ved', [{ value: 'mo', label: 'Министерство обороны' }, { value: 'x', label: 'Росгвардия, МВД, ФСБ, ФСИН, МЧС', sub: 'в следующей версии: у них свой перечень местностей (приложение 2.1 к 941) и своя зарплата' }], S.vedomstvo, v => { if (v === 'mo') { S.vedomstvo = v; save(); } else soobshchit('Пока только Минобороны. Другие ведомства — в следующей версии.'); render(); }));
     root.append(h('h2', {}, 'Состав'), radio('sostav', [{ value: 'ofitser', label: 'Офицер', sub: 'в выслугу может войти учёба в гражданском вузе' }, { value: 'praporshchik', label: 'Прапорщик, мичман' }, { value: 'kontraktnik', label: 'Солдат, сержант, старшина по контракту' }], S.sostav, v => { S.sostav = v; save(); render(); }));
     root.append(h('h2', {}, 'Пол'), radio('pol', [{ value: 'm', label: 'Мужской' }, { value: 'zh', label: 'Женский', sub: 'появятся страницы про отпуска по беременности и родам и по уходу за ребёнком; предельный возраст 45 лет' }], S.pol, v => { S.pol = v; save(); render(); }));
     root.append(h('p', { class: 'mute' }, 'Оклады и надбавки от пола не зависят. Разница — предельный возраст и отпуска, которые влияют на выслугу и зарплату.'));
@@ -1908,13 +1915,13 @@ const PAGES = [
       item('Награды', `${S.nagrady.length}`, 'G7'), item('Где жить', S.zhitRegion && S.zhitRegion !== 'net' ? `${S.zhitRegion}, ${S.zhitRk}` : 'без коэффициента', 'G8')));
   } },
   { id: 'D3', blok: 'Сводка', title: 'Откуда цифры', render(root) {
-    root.append(h('div', { class: 'card' }, h('p', {}, `Справочник обновлён ${fmtD(DATA_SPRAVOCHNIKA)}. Оклады — с ${fmtD(OKLADY_S)}. Индексация с ${fmtD(INDEKSACIYA_PROEKT.s)} — ${INDEKSACIYA_PROEKT.status}.`),
-      h('ul', {}, ['Закон РФ от 12.02.1993 № 4468-1 — пенсия (ст. 13, 14, 16, 17, 18, 43, 45, 46, 48), ред. 29.12.2025', 'Постановление от 22.09.1993 № 941 — выслуга для пенсии, перечень местностей (приложение № 1), ред. 30.04.2026', 'Постановление от 21.12.2011 № 1074 — выслуга для надбавки, ред. 13.08.2025', 'Федеральный закон от 07.11.2011 № 306-ФЗ — денежное довольствие, ред. 04.08.2026', 'Постановление от 05.12.2011 № 992 и постановления об индексации (последнее № 464 в ред. № 1390, ×1,076 с 01.10.2025) — оклады по званиям', 'Приказ Минобороны от 06.12.2019 № 727 — тарифные разряды, надбавки, ред. 05.03.2026', 'Постановление от 30.12.2011 № 58 — районные коэффициенты и северные надбавки, ред. 04.04.2023', 'Постановление от 21.12.2011 № 1071 — коэффициенты за границей и при конфликтах, ред. 14.10.2025', 'Федеральный закон от 28.11.2025 № 433-ФЗ — 93,59 % в 2026 году', 'Постановление от 20.03.2026 № 197 — социальная пенсия 9 424,12 ₽ с 01.04.2026', 'Закон РФ от 21.01.1993 № 4328-1, постановление от 31.03.1994 № 280 (ред. 17.12.2024), приказ Минобороны № 9 (1996), закон 284-ФЗ (2006) — служба за границей', 'Указ Президента от 16.09.1999 № 1237 — отпуска по беременности и уходу', 'Федеральный закон от 28.03.1998 № 53-ФЗ ст. 49 — предельный возраст', 'Налоговый кодекс ст. 210, 217, 224 — НДФЛ', 'Приказ Минобороны от 15.12.2023 № 845 — кто составляет расчёт выслуги'].map(x => h('li', {}, x))),
+    root.append(h('div', { class: 'card' }, h('p', {}, `Справочник обновлён ${fmtD(DATA_SPRAVOCHNIKA)}. Оклады — с ${fmtD(OKLADY_S)}. ${INDEKSACIYA_PROEKT.tekst}.`),
+      h('ul', {}, ['Закон РФ от 12.02.1993 № 4468-1 — пенсия (ст. 13, 14, 16, 17, 18, 43, 45, 46, 48), ред. 29.12.2025', 'Постановление от 22.09.1993 № 941 — выслуга для пенсии, перечень местностей (приложение № 1), ред. 30.04.2026', 'Постановление от 21.12.2011 № 1074 — выслуга для надбавки, ред. 13.08.2025', 'Федеральный закон от 07.11.2011 № 306-ФЗ — денежное довольствие, ред. 04.08.2026', 'Постановление от 05.12.2011 № 992 и постановления об индексации (последнее № 464 в ред. № 1390, ×1,076 с 01.10.2025) — оклады по званиям', 'Приказ Минобороны от 06.12.2019 № 727 — тарифные разряды, надбавки, ред. 05.03.2026', 'Постановление от 30.12.2011 № 58 — районные коэффициенты и северные надбавки, ред. 04.04.2023', 'Постановление от 21.12.2011 № 1071 — коэффициенты за границей и при конфликтах, ред. 14.10.2025', 'Федеральный закон от 28.11.2025 № 433-ФЗ — 93,59 % в 2026 году', 'Постановление от 26.02.2026 № 197 — социальная пенсия 9 424,12 ₽ с 01.04.2026', 'Закон РФ от 21.01.1993 № 4328-1, постановление от 31.03.1994 № 280 (ред. 17.12.2024), приказ Минобороны № 9 (1996), закон 284-ФЗ (2006) — служба за границей', 'Указ Президента от 16.09.1999 № 1237 — отпуска по беременности и уходу', 'Федеральный закон от 28.03.1998 № 53-ФЗ ст. 49 — предельный возраст', 'Налоговый кодекс ст. 210, 217, 224 — НДФЛ', 'Приказ Минобороны от 15.12.2023 № 845 — кто составляет расчёт выслуги'].map(x => h('li', {}, x))),
       h('p', { class: 'mute' }, 'Что не нашлось в открытых документах и помечено в приложении «как в приказе»: пункт 4 постановления 941 (не публикуется), решения по Сирии и Африке, валютная часть довольствия за границей, точные проценты приказа № 430.')));
   } },
   { id: 'D4', blok: 'Сводка', title: 'Настройки', render(root) {
     root.append(h('div', { class: 'card' }, h('label', { class: 'opt' }, h('input', { type: 'checkbox', ...(S.podrobno ? { checked: '' } : {}), onchange: ev => { S.podrobno = ev.target.checked; save(); } }), h('span', { class: 't' }, 'Показывать подробные пояснения на каждой странице', h('small', {}, 'выключите для повторных расчётов — пояснения свернутся'))),
-      h('button', { class: 'ghost', onclick: () => { if (confirmDel()) reklama('udalenie').then(() => { S = defaults(); save(); go('A1'); }); } }, 'Удалить все данные с телефона')));
+      h('button', { class: 'ghost', onclick: () => confirmDel().then(ok => { if (ok) reklama('udalenie').then(() => { S = defaults(); save(); go('A1'); }); }) }, 'Удалить все данные с телефона')));
   } },
   { id: 'D5', blok: 'Готово', title: 'Расчёт готов', render(root) {
     const v = vysluga(); const z = schitatZarplatu(zarplataInput()); const pi = pensiyaInput(); if (S.uvolnenie === 'dvadcat') pi.vyslugaLet = Math.max(20, pi.vyslugaLet); const p = schitatPensiyu(pi);
@@ -1934,7 +1941,7 @@ const PAGES = [
       h('details', { class: 'perenos' }, h('summary', {}, 'Перенести ответы на другой телефон'),
         h('div', { class: 'row', style: 'margin-top:10px' }, h('button', { class: 'ghost', onclick: () => vygruzit('json') }, 'Файл для переноса'), h('button', { class: 'ghost', onclick: () => importFile() }, 'Открыть файл для переноса')),
         h('p', { class: 'mute' }, 'Файл для переноса читает только это приложение. Ответы уже сохранены в памяти этого телефона и останутся после закрытия приложения.')),
-      h('input', { type: 'file', id: 'imp', accept: '.json,application/json', style: 'display:none', onchange: ev => { const f = ev.target.files[0]; if (!f) return; f.text().then(t => { try { const o = JSON.parse(t); if (o && o.otvety) { S = { ...defaults(), ...o.otvety }; save(); alert('Файл открыт.'); go('D1'); } else alert('Это не файл расчёта.'); } catch { alert('Файл не читается.'); } }); } })));
+      h('input', { type: 'file', id: 'imp', accept: '.json,application/json', style: 'display:none', onchange: ev => { const f = ev.target.files[0]; if (!f) return; f.text().then(t => { try { const o = JSON.parse(t); if (o && o.otvety) { S = { ...defaults(), ...o.otvety }; save(); soobshchit('Файл открыт.'); go('D1'); } else soobshchit('Это не файл расчёта.'); } catch { soobshchit('Файл не читается.'); } }); } })));
     root.append(h('div', { class: 'row' }, h('button', { class: 'ghost', onclick: () => go('D1') }, 'Исправить ответы'), h('button', { class: 'ghost', onclick: () => novyRaschet() }, 'Новый расчёт')));
     root.append(h('p', { class: 'mute', style: 'margin-top:14px' }, 'Расчёт предварительный. Размер пенсии устанавливает пенсионный орган.'));
   } },
@@ -1942,15 +1949,36 @@ const PAGES = [
 
 // ---------- Места для рекламы ----------
 // Реклама показывается: перед сохранением PDF / Excel / Word, при «В начало» на последней странице, при «Новый расчёт»,
-// при «Удалить все данные». Сейчас рекламы нет: функция сразу пропускает дальше.
-// Чтобы подключить рекламу, достаточно объявить window.DSAds = { show: (povod) => Promise } (Android — мост к плагину
-// Яндекс Mobile Ads, iPhone/сайт — полноэкранный блок РСЯ для сайтов). Ошибка рекламы никогда не мешает действию.
+// при «Удалить все данные». Действие выполняется только после того, как реклама закрыта.
+// Android — плагин DSAds (android/.../AdsPlugin.java, полноэкранная реклама РСЯ). На сайте рекламы пока нет: window.DSAds
+// не объявлен, функция сразу пропускает дальше. Нет сети или рекламы — тоже пропускает: расчёт работает без интернета.
+let reklamaIdet = false;
 function reklama(povod) {
-  try { const r = window.DSAds?.show?.(povod); return Promise.resolve(r).catch(() => {}).then(() => {}); } catch { return Promise.resolve(); }
+  if (reklamaIdet) return new Promise(() => {});   // повторное нажатие, пока идёт реклама, — ничего не делает
+  const plugin = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins?.DSAds : null;
+  const ads = window.DSAds || (plugin ? { show: () => plugin.showInterstitial() } : null);
+  if (!ads?.show) return Promise.resolve();
+  reklamaIdet = true;
+  let r; try { r = ads.show(povod); } catch { r = null; }
+  return Promise.resolve(r).catch(() => {}).then(() => { reklamaIdet = false; });
 }
-function novyRaschet() { if (!confirmDel()) return; reklama('novyi-raschet').then(() => { S = defaults(); save(); go('A1'); }); }
+function novyRaschet() { confirmDel().then(ok => { if (ok) reklama('novyi-raschet').then(() => { S = defaults(); save(); go('A1'); }); }); }
 
-function confirmDel() { const ok = window.confirm ? window.confirm('Удалить все ответы с телефона?') : true; return ok; }
+// Свои окна вместо системных confirm/alert: у системных кнопки по-английски (CANCEL / OK), в просмотрщиках они вовсе не открываются.
+let oknoZakryt = null;
+function okno(text, ok = 'Понятно', cancel = null) {
+  return new Promise(resolve => {
+    const fon = h('div', { class: 'okno-fon' });
+    const done = v => { fon.remove(); oknoZakryt = null; resolve(v); };
+    fon.append(h('div', { class: 'okno card', role: 'dialog' }, h('p', {}, text),
+      h('div', { class: 'okno-knopki' }, cancel ? h('button', { class: 'ghost', onclick: () => done(false) }, cancel) : null, h('button', { onclick: () => done(true) }, ok))));
+    fon.addEventListener('click', e => { if (e.target === fon) done(false); });
+    oknoZakryt = () => done(false);
+    document.body.append(fon);
+  });
+}
+function soobshchit(text) { okno(text); }
+function confirmDel() { return okno('Удалить все ответы с телефона?', 'Удалить', 'Отмена'); }
 function nextDay(e) { if (!e.to) return ''; const d = parseDate(e.to); d.setUTCDate(d.getUTCDate() + 1); return fmt(d); }
 
 // Отчёт для выгрузки — одна модель на все форматы.
@@ -1988,13 +2016,13 @@ function vygruzit(fmtName) {
   try {
     if (fmtName === 'json') { const v = vysluga(); text = JSON.stringify({ prilozhenie: 'DS Калькулятор', data: TODAY, otvety: S, itogi: { kalendar: slovami(v.kalendar), pensiya: slovami(v.pensiya) } }, null, 2); name = `DS-perenos-${TODAY}.json`; }
     else { const r = otchyot(); bytes = fmtName === 'pdf' ? pdf(r) : fmtName === 'xlsx' ? xlsx(r) : docx(r); }
-  } catch (e) { alert('Не получилось собрать файл: ' + (e?.message || e)); return; }
+  } catch (e) { soobshchit('Не получилось собрать файл: ' + (e?.message || e)); return; }
   const P = window.Capacitor?.isNativePlatform?.() ? window.Capacitor.Plugins : null;
   if (P?.Filesystem && P?.Share) {
     const w = text != null ? { path: name, data: text, directory: 'CACHE', encoding: 'utf8' } : { path: name, data: toBase64(bytes), directory: 'CACHE' };
     Promise.resolve(P.Filesystem.writeFile(w))
       .then(r => P.Share.share({ title: name, url: r.uri, dialogTitle: 'Сохранить расчёт' }))
-      .catch(e => { if (!/cancel/i.test(String(e?.message || e))) alert('Не получилось сохранить файл: ' + (e?.message || e)); });
+      .catch(e => { if (!/cancel/i.test(String(e?.message || e))) soobshchit('Не получилось сохранить файл: ' + (e?.message || e)); });
     return;
   }
   const blob = new Blob([text != null ? text : bytes], { type: MIME[fmtName] });
@@ -2108,6 +2136,7 @@ render();
   let lastBack = 0;
   try {
     Promise.resolve(App.addListener('backButton', () => {
+      if (oknoZakryt) { oknoZakryt(); return; }
       if (etapView) { etapView = null; render(); return; }
       if (cur > 0) { cur -= 1; render(); return; }
       const now = Date.now();
